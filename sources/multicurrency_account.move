@@ -34,8 +34,9 @@ public fun new(ctx: &mut TxContext): MulticurrencyAccount {
 }
 
 public fun deposit<Currency>(self: &mut MulticurrencyAccount, deposit_balance: Balance<Currency>) {
-    self.assert_is_authorized_currency<Currency>();
-    if (!self.summary.contains(&type_name::get<Currency>())) {
+    let currency_type = type_name::get<Currency>();
+    assert!(self.authorized_currencies.contains(&currency_type), ENotAuthorizedCurrency);
+    if (!self.summary.contains(&currency_type)) {
         self.initialize_balance<Currency>();
     };
     self.currency_balance_mut<Currency>().join(deposit_balance);
@@ -64,8 +65,16 @@ public fun close_balance<Currency>(self: &mut MulticurrencyAccount): Balance<Cur
 
 //=== Public View Functions ===
 
-public fun currency_balance<Currency>(self: &MulticurrencyAccount): &Balance<Currency> {
+public fun balance<Currency>(self: &MulticurrencyAccount): &Balance<Currency> {
     self.balances.borrow<TypeName, Balance<Currency>>(type_name::get<Currency>())
+}
+
+public fun balance_value<Currency>(self: &MulticurrencyAccount): u64 {
+    self.balance<Currency>().value()
+}
+
+public fun has_currency<Currency>(self: &MulticurrencyAccount): bool {
+    self.summary.contains(&type_name::get<Currency>())
 }
 
 public fun summary(self: &MulticurrencyAccount): &VecMap<TypeName, u64> {
@@ -80,21 +89,13 @@ fun currency_balance_mut<Currency>(self: &mut MulticurrencyAccount): &mut Balanc
 
 fun initialize_balance<Currency>(self: &mut MulticurrencyAccount) {
     assert!(self.authorized_currencies.size() < MAX_CURRENCY_COUNT, EMaxCurrencyCountReached);
-    self.balances.add(type_name::get<Currency>(), balance::zero<Currency>());
-    self.summary.insert(type_name::get<Currency>(), 0);
+    let currency_type = type_name::get<Currency>();
+    self.balances.add(currency_type, balance::zero<Currency>());
+    self.summary.insert(currency_type, 0);
 }
 
 fun update_summary_value<Currency>(self: &mut MulticurrencyAccount) {
-    let updated_value = self.currency_balance<Currency>().value();
+    let currency_value = self.balance<Currency>().value();
     let summary_value = self.summary.get_mut(&type_name::get<Currency>());
-    *summary_value = updated_value;
-}
-
-//=== Assertions ===
-
-fun assert_is_authorized_currency<Currency>(self: &MulticurrencyAccount) {
-    assert!(
-        self.authorized_currencies.contains(&type_name::get<Currency>()),
-        ENotAuthorizedCurrency,
-    );
+    *summary_value = currency_value;
 }

@@ -63,22 +63,23 @@ public fun close_balance<Currency>(self: &mut MulticurrencyAccount): Balance<Cur
     self.balances.remove<TypeName, Balance<Currency>>(currency_type)
 }
 
-//=== Public View Functions ===
-
-public fun balance<Currency>(self: &MulticurrencyAccount): &Balance<Currency> {
-    self.balances.borrow<TypeName, Balance<Currency>>(type_name::get<Currency>())
+public fun destroy(self: MulticurrencyAccount) {
+    let MulticurrencyAccount { balances, .. } = self;
+    balances.destroy_empty();
 }
 
+//=== Public View Functions ===
+
 public fun balance_value<Currency>(self: &MulticurrencyAccount): u64 {
-    self.balance<Currency>().value()
+    let mut balance_value = 0;
+    if (self.has_currency<Currency>()) {
+        balance_value = self.balance_value<Currency>();
+    };
+    balance_value
 }
 
 public fun has_currency<Currency>(self: &MulticurrencyAccount): bool {
     self.summary.contains(&type_name::get<Currency>())
-}
-
-public fun summary(self: &MulticurrencyAccount): &VecMap<TypeName, u64> {
-    &self.summary
 }
 
 //=== Private Functions ===
@@ -95,7 +96,7 @@ fun initialize_balance<Currency>(self: &mut MulticurrencyAccount) {
 }
 
 fun update_summary_value<Currency>(self: &mut MulticurrencyAccount) {
-    let currency_value = self.balance<Currency>().value();
+    let currency_value = self.balance_value<Currency>();
     let summary_value = self.summary.get_mut(&type_name::get<Currency>());
     *summary_value = currency_value;
 }

@@ -38,6 +38,14 @@ public fun authorize_currency<Currency>(self: &mut MulticurrencyAccount) {
     self.authorized_currencies.insert(type_name::get<Currency>());
 }
 
+public fun authorize_currency_with_typename(
+    self: &mut MulticurrencyAccount,
+    currency_typename: TypeName,
+) {
+    assert!(self.authorized_currencies.size() < MAX_CURRENCY_COUNT, EMaxCurrencyCountReached);
+    self.authorized_currencies.insert(currency_typename);
+}
+
 public fun deposit<Currency>(self: &mut MulticurrencyAccount, deposit_balance: Balance<Currency>) {
     let currency_type = type_name::get<Currency>();
     assert!(self.authorized_currencies.contains(&currency_type), ENotAuthorizedCurrency);

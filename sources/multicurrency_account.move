@@ -33,6 +33,11 @@ public fun new(ctx: &mut TxContext): MulticurrencyAccount {
     }
 }
 
+public fun authorize_currency<Currency>(self: &mut MulticurrencyAccount) {
+    assert!(self.authorized_currencies.size() < MAX_CURRENCY_COUNT, EMaxCurrencyCountReached);
+    self.authorized_currencies.insert(type_name::get<Currency>());
+}
+
 public fun deposit<Currency>(self: &mut MulticurrencyAccount, deposit_balance: Balance<Currency>) {
     let currency_type = type_name::get<Currency>();
     assert!(self.authorized_currencies.contains(&currency_type), ENotAuthorizedCurrency);
